@@ -2,32 +2,32 @@ import React, { useEffect, useState, useCallback, useMemo } from "react";
 import { toast } from "react-toastify";
 import { GoCheckCircleFill } from "react-icons/go";
 import { AiFillCloseCircle } from "react-icons/ai";
-import { database } from "../FirebaseConfig"; // Firebase configuration
-import { ref, get, update } from "firebase/database"; // Firebase methods for fetching and updating data
-import UserInfo from "./UserInfo"; // Import the UserInfo component
+import { database } from "../FirebaseConfig";
+import { ref, get, update } from "firebase/database";
+import UserInfo from "./UserInfo";
 
 const Dashboard = () => {
   const [appointments, setAppointments] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [user, setUser] = useState(null); // Store user/admin info, including email
+  const [user, setUser] = useState(null);
 
   // Fetch appointments from Firebase
   useEffect(() => {
     const fetchAppointments = async () => {
-      setLoading(true); // Set loading to true initially
+      setLoading(true);
       try {
         const appointmentsRef = ref(database, "appointments");
         const snapshot = await get(appointmentsRef);
         if (snapshot.exists()) {
           const appointmentsData = snapshot.val();
-          setAppointments(Object.values(appointmentsData)); // Convert object to array
+          setAppointments(Object.entries(appointmentsData).map(([id, data]) => ({ id, ...data })));
         } else {
           setAppointments([]);
         }
       } catch (error) {
         toast.error("Failed to load appointments.");
       } finally {
-        setLoading(false); // Set loading to false after fetching data
+        setLoading(false);
       }
     };
 
@@ -45,8 +45,7 @@ const Dashboard = () => {
         const userRef = ref(database, `users/${userId}`);
         const snapshot = await get(userRef);
         if (snapshot.exists()) {
-          const userData = snapshot.val();
-          setUser(userData); // Store user data, including email
+          setUser(snapshot.val());
         } else {
           toast.error("User data not found.");
         }
@@ -59,30 +58,31 @@ const Dashboard = () => {
   }, []);
 
   // Update appointment status in Firebase
-  const handleUpdateStatus = useCallback(async (appointmentId, status) => {
-    try {
-      const appointmentRef = ref(database, `appointments/${appointmentId}`);
-      await update(appointmentRef, { status });
+  const handleUpdateStatus = useCallback(
+    async (appointmentId, status) => {
+      try {
+        const appointmentRef = ref(database, `appointments/${appointmentId}`);
+        await update(appointmentRef, { status });
 
-      // Update the specific appointment's status locally
-      setAppointments((prevAppointments) =>
-        prevAppointments.map((appointment) =>
-          appointment.id === appointmentId
-            ? { ...appointment, status }
-            : appointment
-        )
-      );
+        // Update the specific appointment's status locally
+        setAppointments((prevAppointments) =>
+          prevAppointments.map((appointment) =>
+            appointment.id === appointmentId ? { ...appointment, status } : appointment
+          )
+        );
 
-      toast.success("Status updated successfully.");
-    } catch (error) {
-      toast.error("Failed to update status.");
-    }
-  }, []);
+        toast.success("Status updated successfully.");
+      } catch (error) {
+        toast.error("Failed to update status.");
+      }
+    },
+    [setAppointments]
+  );
 
   // Memoized count for total appointments and registered doctors
   const totalAppointments = useMemo(() => appointments.length, [appointments]);
   const totalDoctors = useMemo(() => {
-    const doctorSet = new Set(appointments.map((appt) => appt.doctor?.id)); // Add optional chaining
+    const doctorSet = new Set(appointments.map((appt) => appt.doctor?.id));
     return doctorSet.size;
   }, [appointments]);
 
@@ -92,9 +92,8 @@ const Dashboard = () => {
         <div className="firstBox">
           <img src="/logotry.png" alt="Doctor" />
           <div className="content">
-            {/* Displaying logged-in user's name and email */}
             <p>Hello, {user?.name || 'Admin'}</p>
-            <p>Email: {user?.email || 'No email available'}</p> {/* Displaying email */}
+            <p>Email: {user?.email || 'No email available'}</p>
             <p>
               The Krishak drone can operate in multiple modes, across landscapes
               and altitudes, and integrate with a range of payloads based on the
@@ -113,7 +112,7 @@ const Dashboard = () => {
         </div>
       </div>
 
-      <UserInfo /> {/* Display the logged-in user's info here */}
+      <UserInfo />
 
       <div className="banner">
         <h5>Appointments</h5>
@@ -131,7 +130,7 @@ const Dashboard = () => {
             </thead>
             <tbody>
               {appointments.map((appointment) => (
-                <tr key={appointment.id}> {/* Added unique key for each appointment */}
+                <tr key={appointment.id}>
                   <td>{`${appointment.firstName} ${appointment.lastName}`}</td>
                   <td>{appointment.appointment_date ? appointment.appointment_date.substring(0, 16) : 'N/A'}</td>
                   <td>
@@ -173,4 +172,3 @@ const Dashboard = () => {
 };
 
 export default Dashboard;
-  

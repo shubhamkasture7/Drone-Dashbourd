@@ -72,7 +72,7 @@ const styles = {
     justifyContent: "center",
     alignItems: "center",
     height: "100vh", // Full viewport height
-    Overflow: "hidden",
+    overflow: "hidden",
   },
 };
 
